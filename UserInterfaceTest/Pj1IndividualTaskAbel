@@ -1,0 +1,549 @@
+Script started on 2026-09-26 23:47:59+00:00 [TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="117" LINES="10"]
+[?2004h[0;32m@abelSam10 [0m➜ [1;34m/workspaces/Project1IndividualAbel/UserInterfaceTest [0;36m([1;31mmain[0;36m) [0m$ cat UserInterface.java
+[?2004limport java.util.*;
+// import java.text.*;
+import java.io.*;
+public class UserInterface {
+  private static UserInterface userInterface;
+  private BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+  private static Warehouse warehouse;
+  private static final int EXIT = 0;
+  private static final int ADD_CLIENT = 1;
+  private static final int ADD_PRODUCTS = 2;
+  private static final int ADD_TO_WISHLIST = 3;
+  private static final int DISPLAY_CLIENTS = 4;
+  private static final int DISPLAY_PRODUCTS = 5;
+  private static final int DISPLAY_WISHLIST = 6;
+  private static final int HELP = 7;
+  private UserInterface() {
+     warehouse = Warehouse.instance();
+    
+  }
+  public static UserInterface instance() {
+    if (userInterface == null) {
+      return userInterface = new UserInterface();
+    } else {
+      return userInterface;
+    }
+  }
+  public String getToken(String prompt) {
+    do {
+      try {
+        System.out.println(prompt);
+        String line = reader.readLine();
+        if (line == null) {
+          System.exit(0);
+        }
+        StringTokenizer tokenizer = new StringTokenizer(line,"\n\r\f");
+        if (tokenizer.hasMoreTokens()) {
+          return tokenizer.nextToken();
+        }
+      } catch (IOException ioe) {
+        System.exit(0);
+      }
+    } while (true);
+  }
+  private boolean yesOrNo(String prompt) {
+    String more = getToken(prompt + " (Y|y)[es] or anything else for no");
+    if (more.charAt(0) != 'y' && more.charAt(0) != 'Y') {
+      return false;
+    }
+    return true;
+  }
+  public int getNumber(String prompt) {
+    do {
+      try {
+        String item = getToken(prompt);
+        Integer num = Integer.valueOf(item);
+        return num.intValue();
+      } catch (NumberFormatException nfe) {
+        System.out.println("Please input a number ");
+      }
+    } while (true);
+  }
+  public double getDouble(String prompt) {
+    do {
+      try {
+        String item = getToken(prompt);
+        return Double.parseDouble(item);
+      } catch (NumberFormatException nfe) {
+        System.out.println("Please input a number ");
+      }
+    } while (true);
+  }
+  // public Calendar getDate(String prompt) {
+  //   do {
+  //     try {
+  //       Calendar date = new GregorianCalendar();
+  //       String item = getToken(prompt);
+  //       DateFormat df = SimpleDateFormat.getDateInstance(DateFormat.SHORT);
+  //       date.setTime(df.parse(item));
+  //       return date;
+  //     } catch (Exception fe) {
+  //       System.out.println("Please input a date as mm/dd/yy");
+  //     }
+  //   } while (true);
+  // }
+  public int getCommand() {
+    do {
+      try {
+        int value = Integer.parseInt(getToken("Enter command: "));
+        if (value >= EXIT && value <= HELP) {
+          return value;
+        }
+      } catch (NumberFormatException nfe) {
+        System.out.println("Enter a number");
+      }
+    } while (true);
+  }
+
+  public void help() {
+    System.out.println("Enter a number between 0 and 7 as explained below:");
+    System.out.println(EXIT + " to Exit\n");
+    System.out.println(ADD_CLIENT + " to add a client");
+    System.out.println(ADD_PRODUCTS + " to  add products");
+    System.out.println(ADD_TO_WISHLIST + " to  add to client's wishlist");
+    System.out.println(DISPLAY_CLIENTS + " to  display clients ");
+    System.out.println(DISPLAY_PRODUCTS + " to  display products ");
+    System.out.println(DISPLAY_WISHLIST + " to  display wishlist");
+    System.out.println(HELP + " for help");
+  }
+
+  public void addClient() {
+    String name = getToken("Enter Client name");
+    String address = getToken("Enter address");
+    String phone = getToken("Enter phone");
+    Client result;
+    result = warehouse.addClient(name, address, phone);
+    if (result == null) {
+      System.out.println("Could not add client");
+    } else {
+      System.out.println(result);
+    }
+  }
+
+  public void addProducts() {
+    Product result;
+    do {
+      String name = getToken("Enter name of product");
+      int quantity = getNumber("Enter quantity");
+      double salePrice = getDouble("Enter SalePrice");
+      result = warehouse.addProduct(name, quantity, salePrice);
+      if (result != null) {
+        System.out.println(result);
+      } else {
+        System.out.println("Product could not be added");
+      }
+      if (!yesOrNo("Add more products?")) {
+        break;
+      }
+    } while (true);
+  }
+
+  public void addToWishlist() {
+    String ClientID = getToken("Enter Client ID");
+    String ProductID = getToken("Enter Product ID");
+    int productQuantity = getNumber("Enter product quantity");
+    boolean result = warehouse.addToWishlist(ClientID, ProductID, productQuantity);
+    if (result) {
+      System.out.println("Product added to wishlist");
+    } else {
+      System.out.println("Could not add product to wishlist");
+    }
+  }
+
+  public void displayProducts() {
+      Iterator<Product> allProducts = warehouse.getProducts();
+      while (allProducts.hasNext()){
+	  Product product = allProducts.next();
+          System.out.println(product.toString());
+      }
+  }
+
+  public void displayClients() {
+      Iterator<Client> allClients = warehouse.getClients();
+      while (allClients.hasNext()){
+	  Client client = allClients.next();
+          System.out.println(client.toString());
+      }
+  }
+
+  public void displayWishlist() {
+      String ClientID = getToken("Enter Client ID");
+      Iterator<Product> wishlist = warehouse.getWishlist(ClientID);
+      if (wishlist == null) {
+        System.out.println("No such client");
+        return;
+      }
+      System.out.println("Wishlist for " + ClientID);
+      while (wishlist.hasNext()){
+          Product product = wishlist.next();
+          System.out.println(product.toString());
+      }
+  }
+  
+  // private void save() {
+  //   if (warehouse.save()) {
+  //     System.out.println(" The warehouse has been successfully saved in the file WarehouseData \n" );
+  //   } else {
+  //     System.out.println(" There has been an error in saving \n" );
+  //   }
+  // }
+  // private void retrieve() {
+  //   try {
+  //     Warehouse tempWarehouse = Warehouse.retrieve();
+  //     if (tempWarehouse != null) {
+  //       System.out.println(" The warehouse has been successfully retrieved from the file WarehouseData \n" );
+  //       warehouse = tempWarehouse;
+  //     } else {
+  //       System.out.println("File doesnt exist; creating new warehouse" );
+  //       warehouse = Warehouse.instance();
+  //     }
+  //   } catch(Exception cnfe) {
+  //     cnfe.printStackTrace();
+  //   }
+  // }
+  public void process() {
+    int command;
+    help();
+    while ((command = getCommand()) != EXIT) {
+      switch (command) {
+        case ADD_CLIENT:        addClient();
+                                break;
+        case ADD_PRODUCTS:         addProducts();
+                                break;
+        case ADD_TO_WISHLIST:       addToWishlist();
+                                break;
+        case DISPLAY_CLIENTS:      displayClients();
+                                break;
+        case DISPLAY_PRODUCTS:      displayProducts();
+                                break;
+        case DISPLAY_WISHLIST:       displayWishlist();
+                                break;
+        case HELP:              help();
+                                break;
+      }
+    }
+  }
+  public static void main(String[] s) {
+    UserInterface.instance().process();
+  }
+}
+[?2004h[0;32m@abelSam10 [0m➜ [1;34m/workspaces/Project1IndividualAbel/UserInterfaceTest [0;36m([1;31mmain[0;36m) [0m$ cat testInput.txt
+[?2004l1
+Client1
+1 Main St
+320-555-0001
+1
+Client2
+2 Main St
+320-555-0002
+1
+Client3
+3 Main St
+320-555-0003
+1
+Client4
+4 Main St
+320-555-0004
+1
+Client5
+5 Main St
+320-555-0005
+4
+2
+Product1
+10
+1
+y
+Product2
+20
+2
+y
+Product3
+30
+3
+y
+Product4
+40
+4
+y
+Product5
+50
+5
+n
+5
+3
+C1
+P1
+5
+3
+C1
+P3
+5
+3
+C1
+P5
+5
+6
+C1
+3
+C2
+P1
+7
+3
+C2
+P2
+7
+3
+C2
+P4
+7
+6
+C2
+3
+C3
+P1
+6
+3
+C3
+P2
+6
+3
+C3
+P5
+6
+6
+C3
+3
+C2
+P3
+7
+3
+C2
+P5
+7
+6
+C2
+6
+C3
+3
+C9
+P1
+5
+3
+C1
+P9
+5
+3
+C1
+P1
+0
+6
+C9
+0
+[?2004h[0;32m@abelSam10 [0m➜ [1;34m/workspaces/Project1IndividualAbel/UserInterfaceTest [0;36m([1;31mmain[0;36m) [0m$ [K[0;32m@abelSam10 [0m➜ [1;34m/workspaces/Project1IndividualAbel/UserInterfaceTest [0;36m([1;31mmain[0;36m) [0m$ [K[0;32m@abelSam10 [0m➜ [1;34m/workspaces/Project1IndividualAbel/UserInterfaceTest [0;36m([1;31mmain[0;36m) [0m$ [K[0;32m@abelSam10 [0m➜ [1;34m/workspaces/Project1IndividualAbel/UserInterfaceTest [0;36m([1;31mmain[0;36m) [0m$ [K[0;32m@abelSam10 [0m➜ [1;34m/workspaces/Project1IndividualAbel/UserInterfaceTest [0;36m([1;31mmain[0;36m) [0m$ [K[0;32m@abelSam10 [0m➜ [1;34m/workspaces/Project1IndividualAbel/UserInterfaceTest [0;36m([1;31mmain[0;36m) [0m$ [K[0;32m@abelSam10 [0m➜ [1;34m/workspaces/Project1IndividualAbel/UserInterfaceTest [0;36m([1;31mmain[0;36m) [0m$ [K[0;32m@abelSam10 [0m➜ [1;34m/workspaces/Project1IndividualAbel/UserInterfaceTest [0;36m([1;31mmain[0;36m) [0m$ cat README
+[?2004lUnit test for the UserInterface class.
+
+Warehouse, Client and Product are dummy classes.
+They only do what UserInterface needs
+
+Compile:
+  javac *.java
+
+to Run interactively:
+  java UserInterface
+
+to Run the Stage 1 test sequence from a file:
+  java UserInterface < testInput.txt
+
+testInput.txt creates clients C1-C5 and products P1-P5, then adds to and prints
+the wishlists in the order given in the assignment. At the end it also tries some
+invalid input (unknown client C9, unknown product P9, quantity 0), and each of
+these should be rejected.
+[?2004h[0;32m@abelSam10 [0m➜ [1;34m/workspaces/Project1IndividualAbel/UserInterfaceTest [0;36m([1;31mmain[0;36m) [0m$ javac *.java
+[?2004l[?2004h[0;32m@abelSam10 [0m➜ [1;34m/workspaces/Project1IndividualAbel/UserInterfaceTest [0;36m([1;31mmain[0;36m) [0m$ java UserInterface < testInput.txt
+[?2004lEnter a number between 0 and 7 as explained below:
+0 to Exit
+
+1 to add a client
+2 to  add products
+3 to  add to client's wishlist
+4 to  display clients 
+5 to  display products 
+6 to  display wishlist
+7 for help
+Enter command: 
+Enter Client name
+Enter address
+Enter phone
+Client C1   name: Client1    address: 1 Main St    phone: 320-555-0001 balance: $0.00
+Enter command: 
+Enter Client name
+Enter address
+Enter phone
+Client C2   name: Client2    address: 2 Main St    phone: 320-555-0002 balance: $0.00
+Enter command: 
+Enter Client name
+Enter address
+Enter phone
+Client C3   name: Client3    address: 3 Main St    phone: 320-555-0003 balance: $0.00
+Enter command: 
+Enter Client name
+Enter address
+Enter phone
+Client C4   name: Client4    address: 4 Main St    phone: 320-555-0004 balance: $0.00
+Enter command: 
+Enter Client name
+Enter address
+Enter phone
+Client C5   name: Client5    address: 5 Main St    phone: 320-555-0005 balance: $0.00
+Enter command: 
+Client C1   name: Client1    address: 1 Main St    phone: 320-555-0001 balance: $0.00
+Client C2   name: Client2    address: 2 Main St    phone: 320-555-0002 balance: $0.00
+Client C3   name: Client3    address: 3 Main St    phone: 320-555-0003 balance: $0.00
+Client C4   name: Client4    address: 4 Main St    phone: 320-555-0004 balance: $0.00
+Client C5   name: Client5    address: 5 Main St    phone: 320-555-0005 balance: $0.00
+Enter command: 
+Enter name of product
+Enter quantity
+Enter SalePrice
+Product P1   name: Product1   qty: 10    price: $1.00
+Add more products? (Y|y)[es] or anything else for no
+Enter name of product
+Enter quantity
+Enter SalePrice
+Product P2   name: Product2   qty: 20    price: $2.00
+Add more products? (Y|y)[es] or anything else for no
+Enter name of product
+Enter quantity
+Enter SalePrice
+Product P3   name: Product3   qty: 30    price: $3.00
+Add more products? (Y|y)[es] or anything else for no
+Enter name of product
+Enter quantity
+Enter SalePrice
+Product P4   name: Product4   qty: 40    price: $4.00
+Add more products? (Y|y)[es] or anything else for no
+Enter name of product
+Enter quantity
+Enter SalePrice
+Product P5   name: Product5   qty: 50    price: $5.00
+Add more products? (Y|y)[es] or anything else for no
+Enter command: 
+Product P1   name: Product1   qty: 10    price: $1.00
+Product P2   name: Product2   qty: 20    price: $2.00
+Product P3   name: Product3   qty: 30    price: $3.00
+Product P4   name: Product4   qty: 40    price: $4.00
+Product P5   name: Product5   qty: 50    price: $5.00
+Enter command: 
+Enter Client ID
+Enter Product ID
+Enter product quantity
+Product added to wishlist
+Enter command: 
+Enter Client ID
+Enter Product ID
+Enter product quantity
+Product added to wishlist
+Enter command: 
+Enter Client ID
+Enter Product ID
+Enter product quantity
+Product added to wishlist
+Enter command: 
+Enter Client ID
+Wishlist for C1
+Product P1   name: Product1   qty: 10    price: $1.00
+Product P3   name: Product3   qty: 30    price: $3.00
+Product P5   name: Product5   qty: 50    price: $5.00
+Enter command: 
+Enter Client ID
+Enter Product ID
+Enter product quantity
+Product added to wishlist
+Enter command: 
+Enter Client ID
+Enter Product ID
+Enter product quantity
+Product added to wishlist
+Enter command: 
+Enter Client ID
+Enter Product ID
+Enter product quantity
+Product added to wishlist
+Enter command: 
+Enter Client ID
+Wishlist for C2
+Product P1   name: Product1   qty: 10    price: $1.00
+Product P2   name: Product2   qty: 20    price: $2.00
+Product P4   name: Product4   qty: 40    price: $4.00
+Enter command: 
+Enter Client ID
+Enter Product ID
+Enter product quantity
+Product added to wishlist
+Enter command: 
+Enter Client ID
+Enter Product ID
+Enter product quantity
+Product added to wishlist
+Enter command: 
+Enter Client ID
+Enter Product ID
+Enter product quantity
+Product added to wishlist
+Enter command: 
+Enter Client ID
+Wishlist for C3
+Product P1   name: Product1   qty: 10    price: $1.00
+Product P2   name: Product2   qty: 20    price: $2.00
+Product P5   name: Product5   qty: 50    price: $5.00
+Enter command: 
+Enter Client ID
+Enter Product ID
+Enter product quantity
+Product added to wishlist
+Enter command: 
+Enter Client ID
+Enter Product ID
+Enter product quantity
+Product added to wishlist
+Enter command: 
+Enter Client ID
+Wishlist for C2
+Product P1   name: Product1   qty: 10    price: $1.00
+Product P2   name: Product2   qty: 20    price: $2.00
+Product P4   name: Product4   qty: 40    price: $4.00
+Product P3   name: Product3   qty: 30    price: $3.00
+Product P5   name: Product5   qty: 50    price: $5.00
+Enter command: 
+Enter Client ID
+Wishlist for C3
+Product P1   name: Product1   qty: 10    price: $1.00
+Product P2   name: Product2   qty: 20    price: $2.00
+Product P5   name: Product5   qty: 50    price: $5.00
+Enter command: 
+Enter Client ID
+Enter Product ID
+Enter product quantity
+Could not add product to wishlist
+Enter command: 
+Enter Client ID
+Enter Product ID
+Enter product quantity
+Could not add product to wishlist
+Enter command: 
+Enter Client ID
+Enter Product ID
+Enter product quantity
+Could not add product to wishlist
+Enter command: 
+Enter Client ID
+No such client
+Enter command: 
+[?2004h[0;32m@abelSam10 [0m➜ [1;34m/workspaces/Project1IndividualAbel/UserInterfaceTest [0;36m([1;31mmain[0;36m) [0m$ ^C[?2004l[?2004h[?2004l
+[?2004h[0;32m@abelSam10 [1;31m➜ [1;34m/workspaces/Project1IndividualAbel/UserInterfaceTest [0;36m([1;31mmain[0;36m) [0m$ exit
+[?2004lexit
+
+Script done on 2026-09-26 23:51:05+00:00 [COMMAND_EXIT_CODE="130"]
